@@ -1,0 +1,407 @@
+================================================================================
+RAG ARCHITECTURE FOR RESEARCH AGENTS — A RESEARCH REPORT
+================================================================================
+
+Date:        June 19, 2026
+Methodology: Local RAG knowledge-base retrieval (file: rag_architecture_research_agents.md)
+             + multi-source web search verification across 8+ sources (2024–2026).
+Prepared by: Research Agent / Automated Research Pipeline
+================================================================================
+
+
+EXECUTIVE SUMMARY
+================================================================================
+
+Retrieval-Augmented Generation (RAG) has undergone a fundamental architectural
+shift over the past six years, evolving from a simple "retrieve-then-read"
+pipeline into an autonomous, agent-driven reasoning system. The field is now
+broadly categorized into three eras: Naive RAG (2020–2023), Advanced RAG
+(2023–2024), and Agentic RAG (2024–present). Each successive era has expanded
+the scope of what RAG systems can accomplish, from single-shot vector retrieval
+to multi-hop, self-reflective, and multi-agent collaborative architectures.
+For research agents specifically — systems designed to gather, synthesize, and
+report on information — the recommended architecture now integrates query
+decomposition, hybrid retrieval with reranking, self-evaluation loops,
+multi-source search (local knowledge base + web), and structured output with
+provenance tracking and confidence scoring.
+
+Benchmark evidence from Meta's CRAG (June 2024) shows that naive RAG pipelines
+achieve approximately 44% accuracy on factual question-answering tasks, while
+state-of-the-art industry RAG solutions reach approximately 63% — a meaningful
+improvement but still far from reliable. Agentic RAG benchmarks are not yet
+standardized, making cross-system comparisons difficult. The CRAG findings are
+consistent across both the local knowledge base and independent web sources,
+providing a rare stable reference point in a rapidly evolving field. Emerging
+benchmarks such as Search-MM (NeurIPS 2025) and AgenticRAGTracer (2026) aim to
+fill the evaluation gap by introducing hop-wise reasoning chains, multi-modality,
+and step-level failure analysis for agentic systems.
+
+Despite the lack of standardized benchmarks, the practical advantages of
+agentic patterns are widely recognized. Agentic RAG with self-check loops
+significantly outperforms static pipelines on multi-hop and ambiguous questions,
+at the cost of 3–10× higher token consumption. Enterprise adoption is accelerating:
+McKinsey's State of AI 2025 survey found 52% of organizations actively using
+AI agents, with 39% running more than 10 agents. However, verification remains
+a critical bottleneck — 27% of GenAI users review ALL outputs — and agentic RAG
+narrows this gap by automating verification and enforcing structured citations.
+The field remains in active flux, with major questions around evaluation
+standardization, latency-cost trade-offs, and the optimal balance between
+autonomy and human oversight still unresolved.
+
+
+KEY FINDINGS
+================================================================================
+
+1. EVOLUTION AND TAXONOMY
+--------------------------------------------------------------------------------
+
+Three Eras of RAG:
+  • Naive RAG (2020–2023)   — Single vector search + LLM generation.
+  • Advanced RAG (2023–2024) — Hybrid search, reranking, query transformation.
+  • Agentic RAG (2024–present) — Autonomous planning, multi-step retrieval,
+    self-evaluation, tool use, and multi-agent collaboration.
+
+Eight Major Architecture Types (in rough chronological / complexity order):
+
+  a) Naive RAG        — Single vector search + LLM. ~44% accuracy.
+  b) Advanced RAG     — Hybrid search (dense+sparse), cross-encoder reranking,
+                        query transformation. ~50–55% accuracy.
+  c) Self-RAG         — Reflection tokens for self-assessment of retrieval and
+                        generation quality.
+  d) Corrective RAG   — Relevance evaluator gates retrieval; falls back to web
+   (CRAG)               search when local results are insufficient.
+  e) Adaptive RAG     — Query classifier routes to appropriate retrieval strategy
+                        by question complexity.
+  f) GraphRAG         — Knowledge graph + community summaries, optimized for
+                        global/thematic queries.
+  g) Agentic RAG      — Autonomous agent plans, retrieves, decomposes, evaluates,
+                        and iterates over multiple steps.
+  h) Multi-Agent RAG  — Specialized agents collaborate (planner, retriever,
+                        evaluator, writer) in a coordinated pipeline.
+
+Sources: Local KB (rag_architecture_research_agents.md); arXiv:2501.09136
+(Singh et al., 2025); arXiv:2606.05658 (Agent-Orchestrated Adaptive RAG, 2026).
+
+
+2. RECOMMENDED ARCHITECTURE FOR RESEARCH AGENTS
+--------------------------------------------------------------------------------
+
+Based on the convergence of local KB recommendations and current web-verified
+best practices (2025–2026), the following pipeline is recommended for
+professional research agents:
+
+  Stage 1 — Query Decomposition
+    Break complex research questions into ordered, atomic sub-queries.
+    Enables targeted retrieval and traceable reasoning chains.
+
+  Stage 2 — Hybrid Retrieval + Reranking
+    Combine dense vector search (semantic similarity) with sparse keyword
+    search (BM25 or similar) for broad recall. Apply cross-encoder reranking
+    to refine results. Hybrid search improves recall 40–70% over dense-only.
+
+  Stage 3 — Multi-Source Search
+    Query both local RAG knowledge base (stored domain documents) and live
+    web search simultaneously. Route results through a relevance evaluator.
+
+  Stage 4 — Self-Evaluation Loop
+    Assess retrieved context for sufficiency and faithfulness. If gaps are
+    detected, refine the query and re-retrieve (bounded iteration, typically
+    2–3 cycles). Reflection improves citation accuracy at a latency cost.
+
+  Stage 5 — Structured Output with Provenance and Confidence
+    Generate final answer with explicit source citations, hop-level reasoning
+    trace, and confidence scoring per claim.
+
+Note: Agentic patterns using this pipeline burn 3–10× more tokens than classic
+RAG. Setting iteration budgets and routing queries to the appropriate pattern
+are essential production practices.
+
+Sources: Local KB; digitalapplied.com (2026 Agentic RAG Patterns Guide);
+futureagi.com (2026 Agentic RAG Architecture); arXiv:2606.05658.
+
+
+3. ACCURACY BENCHMARKS
+--------------------------------------------------------------------------------
+
++-------------------------------------+-------------------+------------------------+
+| Configuration                       | Accuracy (CRAG)   | Source                 |
++-------------------------------------+-------------------+------------------------+
+| Naive RAG (single vector + LLM)     | ~44%              | CRAG (Meta, Jun 2024)  |
+| Advanced RAG (hybrid + reranking)   | ~50–55%           | CRAG / Atlan 2024      |
+| SOTA Industry RAG Solutions         | ~63%              | CRAG (Meta, Jun 2024)  |
+| Agentic RAG                         | Not standardized  | N/A                    |
++-------------------------------------+-------------------+------------------------+
+
+Key observations:
+  • Most advanced LLMs alone (without RAG) achieve ≤34% on CRAG — RAG
+    consistently improves performance.
+  • The SOTA 63% figure is corroborated by both the local KB and independent
+    reporting (thestack.technology, CRAG paper authors).
+  • Agentic RAG benchmarks DO NOT YET EXIST as a standardized suite.
+    Early efforts include Search-MM (NeurIPS 2025, multimodal) and
+    AgenticRAGTracer (2026, hop-aware diagnostics), but no aggregate leaderboard
+    is available.
+  • SOTA advanced RAG has converged near 63% — the remaining gap to reliable
+    (95%+) QA represents the central open problem in the field.
+
+Sources: CRAG benchmark (arXiv:2406.04744, Meta, June 2024); local KB;
+thestack.technology coverage; Atlan 2024 benchmark comparison.
+
+
+4. EVALUATION LANDSCAPE
+--------------------------------------------------------------------------------
+
+Two Dimensions of Evaluation:
+
+  Retrieval Quality:
+    • Context relevance      — Are the retrieved passages on-topic?
+    • Context sufficiency    — Do the passages contain enough information?
+    • Precision              — What fraction of retrieved items is useful?
+    • Recall                 — What fraction of relevant documents was found?
+
+  Generation Quality:
+    • Answer relevance       — Does the answer address the query?
+    • Correctness            — Is the factual content accurate?
+    • Faithfulness           — Is the answer grounded in retrieved context?
+      (hallucination rate)
+
+  Evaluation Frameworks:
+    • Ragas       — Open-source framework for RAG evaluation metrics.
+    • ARES        — Automated RAG evaluation system (few-shot LLM judges).
+    • TruLens     — Feedback functions for RAG and LLM applications.
+    • LangSmith   — LangChain's observability and evaluation platform.
+    • LangFuse    — Open-source tracing and evaluation for LLM apps.
+
+Sources: Local KB; Arize AI / Qdrant Vector Space Day 2025 (self-improving
+evaluations for agentic RAG).
+
+
+5. PRODUCTION CONSIDERATIONS
+--------------------------------------------------------------------------------
+
+  Token Costs:
+    • Agentic RAG patterns burn 3–10× more tokens than classic RAG pipelines
+      (digitalapplied.com, 2026).
+    • Primary cost drivers: iterative retrieval, reflection loops, multi-agent
+      coordination overhead.
+
+  Iteration Budgets:
+    • Best practice: cap self-evaluation/reflection loops at 2–3 iterations
+      (arXiv:2606.05658, 2026).
+    • Query decomposition yields +0.04 overall score / +0.17 MRR on structured
+      domains, but can degrade on pure multi-hop benchmarks — routing logic is
+      critical.
+
+  Framework Choices (Top 5, as of Nov 2025):
+    1. LangGraph   — Best for complex agentic orchestration (multi-agent graphs).
+    2. Haystack    — Best for production NLP pipelines and hybrid search.
+    3. LangChain   — Most comprehensive ecosystem for multi-step workflows.
+    4. LlamaIndex  — Best for pure RAG and document retrieval (simplest API).
+    5. Pathway     — Emerging real-time RAG and data processing framework.
+
+  Production RAG Pipeline Components (futureagi.com, 2026):
+    Core: Chunker → Embedder → Vector Store → Retriever → Reranker → Generator
+    Production layers: Evaluator → Tracing/Observability
+
+  Verification Gap:
+    • McKinsey State of AI 2025: 27% of GenAI users review ALL outputs.
+    • Agentic RAG narrows this gap by automating verification and enforcing
+      citations (datanucleus.dev, 2026).
+
+Sources: digitalapplied.com; futureagi.com; alphacorp.ai (top frameworks, Nov 2025);
+arXiv:2606.05658; McKinsey State of AI 2025 (via datanucleus.dev).
+
+
+6. OPEN CHALLENGES
+--------------------------------------------------------------------------------
+
+  a) No Standardized Agentic RAG Benchmarks
+     CRAG (2024) and traditional datasets cover static RAG. Agentic evaluation
+     requires hop-wise reasoning traces, tool-use accuracy, trajectory coherence,
+     and multi-turn consistency — none of which have a widely adopted benchmark.
+
+  b) Multi-Hop Degradation
+     Query decomposition — a core agentic technique — improves structured,
+     domain-specific retrieval but can degrade ranking precision on pure
+     multi-hop reasoning benchmarks (arXiv:2606.05658, 2026). The boundary
+     conditions for decomposition remain unclear.
+
+  c) Latency and Cost Trade-offs
+     Self-reflection and iterative retrieval improve accuracy and citation
+     quality at substantial latency and token cost. The cost-benefit frontier
+     for different query types is not well mapped.
+
+  d) Verification Gap
+     With 27% of GenAI users still reviewing ALL outputs (McKinsey 2025),
+     trust in automated RAG outputs remains low. Agentic RAG partially addresses
+     this through automated verification and citation enforcement, but the
+     problem is far from solved.
+
+  e) Multimodal RAG Challenges
+     The Search-MM benchmark (NeurIPS 2025) reveals key challenges in
+     modality-aware planning and the trade-off between retrieval effectiveness
+     and efficiency in multimodal settings.
+
+  f) Taxonomy May Shift
+     The field is evolving rapidly. What is called "Agentic RAG" today may be
+     subsumed into broader agent frameworks or rebranded as new paradigms emerge.
+     The 3-era taxonomy (Naive → Advanced → Agentic) is a useful simplification
+     but is not universally accepted.
+
+Sources: CRAG (Meta, 2024); Search-MM (NeurIPS 2025); arXiv:2606.05658;
+arXiv:2501.09136; digitalapplied.com; datanucleus.dev; McKinsey State of AI 2025.
+
+
+SOURCE NOTES
+================================================================================
+
+A. LOCAL KNOWLEDGE BASE SOURCES
+--------------------------------------------------------------------------------
+
+  [KB-1] rag_architecture_research_agents.md
+         Stored document in local RAG knowledge base.
+         Contents: RAG evolution taxonomy, architecture types, evaluation
+         dimensions, key benchmarks (44%/63% accuracy), and recommended
+         research agent pipeline.
+         Supports: Findings 1 (Taxonomy), 2 (Architecture), 3 (Benchmarks),
+         4 (Evaluation).
+
+  [KB-2] arXiv:2501.09136 — "Agentic Retrieval-Augmented Generation: A Survey
+         on Agentic RAG" (Singh et al., 2025)
+         Referenced within local KB. Expanded taxonomy covering agent
+         cardinality, control structure, autonomy, knowledge representation.
+         Supports: Findings 1, 2, 6.
+
+  [KB-3] Atlan 2024 — RAG benchmark comparison.
+         Referenced within local KB.
+         Supports: Finding 3 (accuracy ranges).
+
+  [KB-4] Applied AI 2024 — Enterprise RAG practitioner guide.
+         Referenced within local KB.
+         Supports: Finding 2 (architecture best practices).
+
+  [KB-5] Microsoft GraphRAG (2024)
+         Referenced within local KB.
+         Supports: Finding 1 (GraphRAG architecture).
+
+
+B. WEB SOURCES (verified June 2026)
+--------------------------------------------------------------------------------
+
+  [W-1] futureagi.com — "Agentic RAG in 2026: Patterns, Code, Observability"
+         (Updated May 2026)
+         https://futureagi.com/blog/agentic-rag-systems-2025
+         Six-component core pipeline (chunker, embedder, vector store,
+         retriever, reranker, generator) + evaluator and tracing.
+         Supports: Findings 2 (pipeline), 5 (production components).
+
+  [W-2] arXiv:2501.09136v4 — "Agentic Retrieval-Augmented Generation:
+         A Survey on Agentic RAG" (Singh et al., 2025; last revised Apr 2026)
+         https://arxiv.org/abs/2501.09136
+         Expanded taxonomy, agentic patterns (reflection, planning, tool use,
+         multi-agent collaboration).
+         Supports: Findings 1, 2, 6.
+
+  [W-3] datanucleus.dev (via querynow.com) — "The Agentic Enterprise, Without
+         the Hype" (2026)
+         References McKinsey State of AI 2025: 27% of GenAI users review all
+         outputs; agentic RAG automates verification.
+         Supports: Findings 5, 6.
+
+  [W-4] alphacorp.ai — "Top RAG Frameworks Nov 2025"
+         https://alphacorp.ai (via openhelm.ai comparison article)
+         Top 5: LangGraph, Haystack, LangChain, LlamaIndex, Pathway.
+         Supports: Finding 5.
+
+  [W-5] CRAG Benchmark (Meta, June 2024)
+         arXiv:2406.04744 — "CRAG — Comprehensive RAG Benchmark"
+         Coverage: thestack.technology, ui.adsabs.harvard.edu
+         SOTA industry RAG: 63% accuracy; naive RAG: ~44%.
+         Supports: Finding 3 (core benchmark numbers).
+
+  [W-6] Search-MM Benchmark (NeurIPS 2025)
+         https://neurips.cc/virtual/2025/122429
+         Multimodal agentic RAG benchmark with hop-wise reasoning chains.
+         5 reasoning structures, 3,333 examples.
+         Supports: Findings 3, 6.
+
+  [W-7] Awesome-GraphRAG (DEEP-PolyU)
+         https://github.com/DEEP-PolyU/Awesome-GraphRAG
+         Curated resources on graph-based RAG: graph-structured knowledge
+         representation, graph-aware retrieval for multi-hop reasoning.
+         Supports: Finding 1 (GraphRAG).
+
+  [W-8] arXiv:2606.05658 — "Agent-Orchestrated Adaptive RAG: A Comparative
+         Study on Structured and Multi-Hop Retrieval" (2026)
+         Query decomposition: +0.04 overall, +0.17 MRR (structured); degrades
+         on multi-hop. Reflection improves citation accuracy at latency cost.
+         Supports: Findings 2, 5, 6.
+
+  [W-9] digitalapplied.com — "Agentic RAG Patterns 2026: Multi-Step
+         Reasoning Guide"
+         https://www.digitalapplied.com/blog/agentic-rag-patterns-multi-step-reasoning-guide
+         Five canonical patterns; agentic RAG burns 3-10x more tokens;
+         routing and iteration budgets as key craft skills.
+         Supports: Findings 2, 5, 6.
+
+  [W-10] Arize AI / Qdrant Vector Space Day 2025 — "Self-Improving
+         Evaluations for Agentic RAG: Tracing and Feedback Loops" (Dat Ngo)
+         https://www.youtube.com/watch?v=oA5vt7OcOls
+         Trace multi-step plans, surface tool misuse and hallucinated context,
+         improvement loops.
+         Supports: Findings 4, 5.
+
+
+UNCERTAINTY AND LIMITATIONS
+================================================================================
+
+This report synthesizes findings from a single local knowledge-base document and
+eight web sources verified as of June 2026. Several important limitations should
+be noted.
+
+First, agentic RAG benchmarks are not yet standardized. The accuracy figures
+cited in this report (44% naive, 63% SOTA advanced) come from Meta's CRAG
+benchmark (June 2024), which evaluates static, non-agentic RAG pipelines.
+There is no equivalent standardized benchmark for agentic RAG as of mid-2026.
+Emerging benchmarks such as Search-MM (NeurIPS 2025) and AgenticRAGTracer
+(2026) represent early efforts but have not yet achieved broad adoption.
+Consequently, claims about agentic RAG performance in this report are drawn
+from case studies, vendor benchmarks, and anecdotal evidence rather than from
+a controlled, independent evaluation framework.
+
+Second, the numerical benchmarks (44%, 63%, 50–55%, 40–70% recall improvement)
+largely originate from 2024 publications and may lag current capabilities.
+The field is moving rapidly — the arXiv:2501.09136 survey went through four
+revisions between January 2025 and April 2026 — and published numbers may not
+reflect cutting-edge practice. The 40–70% hybrid recall improvement range, for
+example, is a broad estimate that depends heavily on dataset characteristics
+and implementation quality.
+
+Third, several sources (e.g., McKinsey State of AI data, the "27% review all
+outputs" statistic) originate from surveys with relatively small or
+self-selecting enterprise samples. McKinsey's survey covers ~1,500 respondents,
+and the 52% agent adoption figure may not generalize to smaller organizations
+or non-Western markets.
+
+Fourth, token cost estimates (3–10× for agentic vs. classic RAG) are reported
+anecdotally by practitioners (digitalapplied.com, 2026) and have not been
+systematically measured across a representative range of architectures and
+deployment scales. Actual ratios will vary with query complexity, iteration
+budgets, model choice, and caching strategies.
+
+Fifth, the taxonomy presented (three eras, eight architecture types) is a
+convenient simplification. In practice, many production systems blend elements
+from multiple categories, and the boundaries between "advanced," "agentic,"
+and "multi-agent" RAG are porous. As tooling and research evolve, these
+categories may shift or be superseded by new paradigms.
+
+Finally, web sources include vendor-produced content and blog posts
+(futureagi.com, digitalapplied.com, alphacorp.ai) that, while informative, may
+reflect commercial interests or overstate the maturity of certain approaches.
+Where possible, claims have been cross-referenced with peer-reviewed research
+(arXiv papers, CRAG benchmark, NeurIPS proceedings), but the practitioner
+literature should be read with appropriate caution.
+
+================================================================================
+End of Report
+================================================================================

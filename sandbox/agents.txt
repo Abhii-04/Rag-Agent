@@ -1,0 +1,127 @@
+================================================================================
+                     AGENTIC AI DEVELOPMENT — LATEST NEWS
+                           Report Date: June 2026
+================================================================================
+
+1. HISTORIC MILESTONE: AGENTIC BOT TRAFFIC SURPASSES HUMAN WEB TRAFFIC
+----------------------------------------------------------------------
+- On June 3, 2026, Cloudflare CEO Matthew Prince announced that automated
+  (agentic) requests now account for 57.5% of HTML web traffic vs. 42.5%
+  from humans — the first time bots have surpassed humans in web traffic
+  history, arriving ~18 months earlier than predicted.
+- Microsoft reported that AI-driven sessions it monitored tripled in 2025,
+  calling the shift "historic."
+- Cloudflare shipped countermeasures: AI Crawl Control, pay-per-crawl via
+  HTTP 402 codes, a Content Signals Policy, and partnerships with Visa &
+  Mastercard for agentic commerce security.
+- Implications: advertising models, website monetization, and bot-detection
+  infrastructure are being forced to adapt rapidly.
+
+  Sources: Cloudflare (via Forbes/MediaPost), Microsoft, Cloudflare blog
+
+
+2. MAJOR M&A: SALESFORCE ACQUIRES FIN FOR $3.6B
+----------------------------------------------------------------------
+- On June 15, 2026, Salesforce announced it is acquiring Fin (formerly
+  Intercom), an AI customer service agent platform, for ~$3.6 billion.
+- Fin's AI agent resolves customer queries across live chat, WhatsApp,
+  SMS, phone, Slack, and email.
+- The acquisition bolsters Salesforce's existing Agentforce platform,
+  helping enterprises build and deploy custom AI agents.
+- Fin serves 30,000+ companies globally. Deal closes in Salesforce's
+  fiscal Q4 2027.
+
+  Sources: CNBC, TechCrunch, Reuters, Bloomberg
+
+
+3. INFRASTRUCTURE SHIFT: QUALCOMM BETTING ON AGENTIC AI
+----------------------------------------------------------------------
+- Qualcomm CEO Cristiano Amon stated "agents are going to be the new app,"
+  predicting AI agents will fundamentally change how users interact with
+  devices.
+- Agentic AI demands ultra-low latency and consumes far more tokens than
+  generative AI, projected to quadruple CPU core demand in data centers.
+- Qualcomm's "DragonFly" platform targets efficiency-first inference for
+  data centers (advanced memory + liquid cooling).
+- Qualcomm positions itself for on-device agentic AI across smartphones,
+  laptops, wearables, and AR glasses (Snapdragon XR partnership with
+  Snap's Specs eyewear).
+
+  Sources: Forbes, CNBC Tech Download podcast
+
+
+4. FINTECH & COMMERCE EMBRACE AGENTIC AI
+----------------------------------------------------------------------
+- Visa & OpenAI partnered on agentic commerce infrastructure, allowing
+  AI agents to handle the full shopping lifecycle — from product selection
+  to finalizing payment with a Visa card.
+- Lloyds Banking Group deployed an agentic AI fraud-detection system
+  built on its Envoy platform; prevented over £1bn ($1.3bn) in fraud
+  in 2025 and invested £100m in fraud tech since 2023.
+- Ant Group invested $5.17B in R&D (2025) and launched China's first
+  Agentic Commerce Trust Protocol via Alipay, alongside AI Pay and
+  AI Wallet products.
+- Cloudflare announced partnerships with Visa and Mastercard for
+  agentic commerce security and payment infrastructure.
+
+  Sources: Practical Ecommerce, FinTech Magazine, Ant Group Sustainability
+  Report, Futurism/AP
+
+
+5. IDENTITY & SECURITY FOR THE AGENTIC ERA
+----------------------------------------------------------------------
+- NewCore emerged from stealth with $66M in funding on June 15, 2026,
+  building a security-first identity platform "rebuilt from the ground
+  up for humans and AI agents."
+- The platform addresses the challenge of managing identity, access, and
+  permissions when both human workers and autonomous AI agents operate
+  within the same enterprise ecosystem.
+
+  Source: StreetInsider / PRNewswire
+
+
+6. ENTERPRISE ADOPTION: NEW PRODUCTS & PLATFORMS
+----------------------------------------------------------------------
+- Zoho SalesIQ Summer '26: Launched "Agentic Intelligence" with Zia
+  Agents — autonomous AI operators that resolve queries, escalate when
+  needed, and pull context from Zoho + third-party data. Supports
+  OpenAI, Anthropic, Google AI, DeepSeek, and custom LLMs.
+- Kyndryl released AI Orchestration for Business, built on its Agentic
+  AI Framework combining data, events, and AI agents.
+- WPP Enterprise Solutions & AWS multiyear strategic agreement: WPP
+  becomes a specialist partner for deploying agentic AI across marketing
+  stacks, using AWS Bedrock, Composable Content Engine, and Agentic/CX
+  Commerce Accelerators.
+- Snap launched AI-powered advertising updates: Snap Smart Assistant,
+  third-party AI agent ad access via MCP server, and conversational
+  shopping ads.
+
+  Sources: Futurum Group, Practical Ecommerce, ADWEEK, MediaPost
+
+
+7. OPEN SOURCE & EMBODIED AI
+----------------------------------------------------------------------
+- Ant Group's embodied AI company Robbyant open-sourced a full stack of
+  AI models for the physical world and launched "Evolution of Embodied
+  AI Week" (Jan 2026).
+- OpenText announced a €105M investment in Ireland, creating 400 jobs
+  focused on agentic AI, sovereign cloud, and cybersecurity R&D for
+  EMEA markets.
+
+  Sources: Ant Group, FT / OpenText press release
+
+
+================================================================================
+KEY TAKEAWAYS
+================================================================================
+- Agentic AI has crossed from experimental to mainstream: bots now drive
+  the majority of web traffic.
+- $3.6B+ acquisitions (Salesforce/Fin) and $66M stealth startups (NewCore)
+  signal heavy investment and competition.
+- Infrastructure is being reshaped — from Qualcomm's chips to Cloudflare's
+  network to Visa's payment rails — to support agentic workloads.
+- Identity, security, and trust protocols are emerging as critical
+  enablers for the agentic economy.
+- Enterprise adoption is accelerating across customer service, fraud
+  detection, commerce, marketing, and advertising.
+================================================================================

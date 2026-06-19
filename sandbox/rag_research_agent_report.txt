@@ -1,0 +1,493 @@
+================================================================================
+  RESEARCH REPORT: RAG Architecture for Professional Research Agents
+================================================================================
+  Date: 2026-02-16
+  Author: Research Orchestrator (Deep Agent)
+  Sources: Web search (multiple authoritative sources), local knowledge base
+--------------------------------------------------------------------------------
+
+TABLE OF CONTENTS
+  1. Executive Summary
+  2. Background & Evolution of RAG
+  3. Core Architectural Components
+  4. Major RAG Architecture Types
+     4.1 Naive / Vanilla RAG
+     4.2 Advanced RAG (Hybrid Search, Reranking, Query Transformation)
+     4.3 Self-RAG
+     4.4 Corrective RAG (CRAG)
+     4.5 Adaptive RAG
+     4.6 GraphRAG (Knowledge-Graph-Enhanced RAG)
+     4.7 Agentic RAG
+     4.8 Multi-Agent RAG
+  5. Architecture for Research Agents Specifically
+  6. Evaluation Metrics & Methodologies
+  7. Key Limitations, Risks & Uncertainties
+  8. Best Practices Summary
+  9. Source Notes & References
+  10. Confidence Assessment
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+
+Retrieval-Augmented Generation (RAG) has evolved rapidly from a simple
+"embed → retrieve → generate" pipeline into a rich ecosystem of architectural
+patterns. For professional research agents, the most capable designs move beyond
+single-pass retrieval into agentic, multi-step architectures that decompose
+complex questions, iterate on retrieval, and self-correct.
+
+Key findings:
+
+  - Naive RAG (single vector search + LLM) scores ~44% accuracy on factual QA
+    benchmarks; state-of-the-art advanced RAG systems reach ~63% (Atlan, 2024).
+  - Hybrid search (dense embeddings + sparse BM25 keyword retrieval) improves
+    recall by 40-70% over dense-only approaches (Applied AI, 2024).
+  - Cross-encoder reranking is now considered essential for production systems;
+    it significantly boosts precision after an initial broad retrieval pass.
+  - Agentic RAG — where an autonomous agent plans, retrieves, decomposes queries,
+    and evaluates its own outputs — is the most relevant pattern for research
+    agents that must handle multi-hop questions, ambiguous queries, and cross-
+    document synthesis.
+  - GraphRAG (Microsoft) adds a knowledge-graph layer that excels at global /
+    thematic queries but carries high indexing cost.
+  - Evaluation frameworks (Ragas, ARES, TruLens) measure retrieval quality
+    (context relevance, context sufficiency) and generation quality (answer
+    relevance, correctness, hallucination rate), but no single metric suite is
+    standard.
+
+For research agents, the recommended architecture is a hybrid that combines:
+  (a) multi-step query decomposition and planning,
+  (b) hybrid retrieval (dense + sparse) with reranking,
+  (c) self-reflection / self-correction loops,
+  (d) optional multi-agent delegation for parallel sub-research tasks.
+
+--------------------------------------------------------------------------------
+2. BACKGROUND & EVOLUTION OF RAG
+--------------------------------------------------------------------------------
+
+RAG was formally introduced by Lewis et al. (2020, Meta) as a way to combine
+pre-trained parametric memory (an LLM) with non-parametric external knowledge
+(a retrieval index). The original formulation:
+
+  1. Encode query into a dense vector
+  2. Retrieve top-k chunks from a vector database
+  3. Concatenate retrieved chunks with the query as context
+  4. Generate answer from the LLM
+
+Early limitations quickly became apparent:
+  - Single retrieval pass misses information requiring multi-document synthesis
+  - Chunking strategy dramatically affects retrieval quality
+  - Retrieved context may be irrelevant, contradictory, or insufficient
+  - LLMs can still hallucinate even with retrieved context
+
+This drove the evolution through three eras (per the Agentic RAG survey,
+arXiv:2501.09136):
+
+  Era 1 — Naive RAG (2020-2023): Single retrieval + generation.
+  Era 2 — Advanced RAG (2023-2024): Pre-retrieval (query rewriting, query
+          expansion) and post-retrieval (reranking, compression) optimizations.
+  Era 3 — Agentic RAG (2024-present): Autonomous agents that plan retrieval
+          strategies, use tools, iterate, and collaborate.
+
+--------------------------------------------------------------------------------
+3. CORE ARCHITECTURAL COMPONENTS
+--------------------------------------------------------------------------------
+
+All RAG systems share a pipeline of these stages:
+
+  A. Ingestion & Indexing
+     - Document parsing and cleaning
+     - Chunking (fixed-size, semantic, sentence-window, hierarchical)
+     - Embedding generation (e.g., text-embedding-3-large, all-MiniLM-L6-v2)
+     - Index storage (vector DB: Pinecone, Chroma, Weaviate, Qdrant, FAISS)
+     - Optional: metadata extraction, knowledge graph construction
+
+  B. Retrieval
+     - Dense retrieval (embedding similarity search)
+     - Sparse retrieval (BM25, TF-IDF for keyword matching)
+     - Hybrid retrieval (weighted ensemble of dense + sparse results)
+     - Query transformation (rewriting, decomposition, expansion)
+     - Multi-hop retrieval (iterative: retrieve → reason → retrieve again)
+
+  C. Post-Retrieval Processing
+     - Reranking (cross-encoder models: Cohere, BAAI, BGE)
+     - Context compression / filtering
+     - Deduplication and relevance thresholding
+
+  D. Generation
+     - Prompt construction (system prompt + retrieved context + user query)
+     - LLM inference
+     - Output validation (faithfulness check, citation grounding)
+
+  E. Evaluation & Feedback Loop
+     - Retrieval evaluation (context relevance, context sufficiency)
+     - Generation evaluation (answer relevance, correctness, hallucination)
+     - Human feedback or LLM-as-judge scoring
+
+--------------------------------------------------------------------------------
+4. MAJOR RAG ARCHITECTURE TYPES
+--------------------------------------------------------------------------------
+
+4.1 Naive / Vanilla RAG
+------------------------
+  Description: Single vector search over embedded chunks → feed top-k to LLM
+  Accuracy: ~44% on factual QA benchmarks
+  Strengths: Simple, fast, low cost
+  Weaknesses: No query understanding, no iteration, poor for complex questions
+  Best for: Prototyping, simple FAQ bots over narrow document sets
+
+4.2 Advanced RAG (Hybrid Search + Reranking + Query Transformation)
+-------------------------------------------------------------------
+  Description: Adds pre-retrieval query rewriting (e.g., HyDE, query expansion)
+  and post-retrieval cross-encoder reranking to the naive pipeline.
+  Also includes hybrid (dense + sparse) search.
+  Accuracy: ~50-55% on factual QA benchmarks (estimated)
+  Strengths: Significantly better recall and precision than naive
+  Weaknesses: Still a single retrieval pass; no multi-hop reasoning
+  Best for: Production document QA where queries are well-formed
+
+4.3 Self-RAG
+------------
+  Description: The LLM generates "reflection tokens" — self-assessing whether
+  retrieved passages are relevant, whether the generation is supported, and
+  whether additional retrieval is needed. It can skip retrieval if not needed.
+  Source: Asai et al., 2023 ("Self-RAG: Learning to Retrieve, Generate, and
+  Critique through Self-Reflection")
+  Strengths: Reduces unnecessary retrieval; improves factual accuracy via
+  self-critique; on-the-fly adaptation to query difficulty
+  Weaknesses: Requires fine-tuned or specially prompted models; higher latency
+
+4.4 Corrective RAG (CRAG)
+--------------------------
+  Description: After retrieval, a lightweight evaluator scores the relevance of
+  retrieved documents. If relevance is low, the system triggers web search or
+  query reformulation as a fallback, rather than passing poor context to the LLM.
+  Source: Yan et al., 2024 ("Corrective Retrieval Augmented Generation")
+  Strengths: Graceful degradation when knowledge base coverage is incomplete;
+  reduces hallucination from irrelevant context
+  Weaknesses: Adds latency from evaluation step; depends on evaluator quality
+
+4.5 Adaptive RAG
+----------------
+  Description: A query classifier routes queries to different retrieval
+  strategies. Factual queries go to vector search; analytical queries go to
+  multi-hop or agentic pipelines; simple queries may skip retrieval entirely.
+  Source: Jeong et al., 2024 ("Adaptive-RAG: Learning to Adapt Retrieval-
+  Augmented Large Language Models through Question Complexity")
+  Strengths: Cost-efficient (uses expensive retrieval only when needed); adapts
+  to query complexity
+  Weaknesses: Requires a reliable query classifier; routing adds architectural
+  complexity
+
+4.6 GraphRAG (Knowledge-Graph-Enhanced RAG)
+--------------------------------------------
+  Description: Builds a knowledge graph from source documents using an LLM
+  (entities, relationships, community detection via Leiden algorithm). At
+  query time, retrieves relevant subgraphs and community summaries.
+  Source: Microsoft Research, 2024 ("GraphRAG: Unlocking LLM Discovery on
+  Narrative Private Data")
+  Strengths: Excels at global / thematic / comparative questions that require
+  understanding relationships across documents; outputs are structured and
+  explainable
+  Weaknesses: High indexing cost (LLM calls for graph construction); slower
+  retrieval; overkill for simple fact lookup
+  Best for: Large, interconnected document corpora; research synthesis
+
+4.7 Agentic RAG
+---------------
+  Description: An autonomous agent (or agent loop) controls the RAG pipeline.
+  The agent:
+    - Plans retrieval strategy (what to search, in what order)
+    - Decomposes complex queries into sub-queries
+    - Chooses which tools to use (vector DB, web search, code interpreter)
+    - Evaluates retrieved context for sufficiency
+    - Re-formulates queries if context is insufficient
+    - Iterates until a confidence threshold is met
+    - Reflects on its own outputs for self-correction
+  Source: arXiv:2501.09136 ("Agentic Retrieval-Augmented Generation: A Survey")
+  Strengths: Handles multi-hop, ambiguous, and complex research questions;
+  flexible tool use; iterates until answer quality is sufficient
+  Weaknesses: Higher latency; more expensive (multiple LLM calls); requires
+  careful prompt engineering and guardrails
+  Best for: Research agents, enterprise knowledge systems, complex QA
+
+4.8 Multi-Agent RAG
+-------------------
+  Description: Multiple specialized agents collaborate — a planner agent
+  decomposes the query, retrieval agents search in parallel, an evaluator agent
+  checks quality, and a writer agent synthesizes the final answer.
+  Example: Google's Gemini Enterprise Agent Platform uses a multi-agent workflow
+  with a "Sufficient Context Agent" that decides when to stop retrieving.
+  Strengths: Parallelism; specialization (each agent does one thing well);
+  scalable
+  Weaknesses: Complex orchestration; coordination overhead; harder to debug
+  Best for: Enterprise-scale research systems with high reliability requirements
+
+--------------------------------------------------------------------------------
+5. ARCHITECTURE FOR RESEARCH AGENTS SPECIFICALLY
+--------------------------------------------------------------------------------
+
+For a professional research agent, the architecture should prioritize:
+
+  1. Query Decomposition — Break complex research questions into atomic
+     sub-questions (e.g., "Compare X and Y" → questions about X, about Y,
+     and about criteria for comparison).
+  2. Multi-Source Retrieval — Use both local knowledge base (RAG) and web
+     search, with routing based on recency and coverage.
+  3. Iterative Retrieval — Retrieve, evaluate sufficiency, retrieve more if
+     needed. Do not stop at one pass.
+  4. Self-Correction — After generating an answer, evaluate it for factual
+     consistency with sources. If hallucination risk is high, re-retrieve.
+  5. Source Grounding — Every claim should cite its source. Track source
+     provenance through the entire pipeline.
+  6. Confidence Reporting — Report not just answers but uncertainty levels
+     (high/medium/low) or explicit "cannot verify" statements.
+  7. Evaluation-as-Built-In — Not an afterthought. Log retrieval metrics
+     (precision, recall, context relevance) and generation metrics
+     (faithfulness, correctness) for every response.
+
+A concrete architecture sketch:
+
+    ┌─────────────────────────────────────────────────────┐
+    │                Orchestrator Agent                    │
+    │  (plans, delegates, collects, reconciles)           │
+    └────┬──────┬──────┬──────────┬───────────────────────┘
+         │      │      │          │
+    ┌────▼──┐ ┌─▼───┐ ┌▼──────┐ ┌▼──────────────────────┐
+    │Query  │ │Local│ │Web   │ │Evaluator               │
+    │Decomp.│ │RAG  │ │Search│ │(faithfulness,          │
+    │Agent  │ │Agent│ │Agent │ │ relevance, correctness)│
+    └───────┘ └─────┘ └──────┘ └────────────────────────┘
+         │
+    ┌────▼────────────────────────────────────────────────┐
+    │  Synthesis & Report Writer                          │
+    │  (structured output with sources, confidence notes) │
+    └─────────────────────────────────────────────────────┘
+
+This is the model this very research report was produced with.
+
+--------------------------------------------------------------------------------
+6. EVALUATION METRICS & METHODOLOGIES
+--------------------------------------------------------------------------------
+
+RAG evaluation is a two-part problem: evaluate the retriever and evaluate the
+generator.
+
+  Retrieval Metrics:
+    - Context Relevance — Are retrieved chunks on-topic for the query?
+    - Context Sufficiency — Do retrieved chunks contain enough information to
+      answer the query?
+    - Precision — Fraction of retrieved chunks that are relevant
+    - Recall — Fraction of relevant chunks that were retrieved
+    - Mean Reciprocal Rank (MRR) — Rank of the first relevant result
+    - Normalized Discounted Cumulative Gain (NDCG) — Ranking quality
+
+  Generation Metrics:
+    - Answer Relevance — Does the answer address the user's question?
+    - Answer Correctness — Is the answer factually accurate against ground truth?
+    - Answer Faithfulness (or Hallucination Rate) — Does the answer stay
+      grounded in the provided context, or does it fabricate?
+    - Citation Accuracy — Are citations correctly attributed?
+
+  Frameworks:
+    - Ragas (RAG Assessment): Open-source, uses LLM-as-judge; scores faithfulness,
+      answer relevancy, context precision, context recall
+    - ARES (Amazon): Fine-tuned evaluator models for RAG scoring
+    - TruLens (Neural Magic): RAG triad evaluation (context relevance, groundedness,
+      answer relevance)
+    - LangSmith / LangFuse: Production tracing and evaluation
+
+  Benchmark Findings (Atlan, 2024):
+    - Naive RAG: ~44% correct on comprehensive factual QA benchmark
+    - State-of-the-art advanced RAG: ~63% correct
+    - Agentic RAG: No comprehensive benchmark yet; early results indicate
+      significant improvement on multi-hop questions but variable on simple ones
+
+--------------------------------------------------------------------------------
+7. KEY LIMITATIONS, RISKS & UNCERTAINTIES
+--------------------------------------------------------------------------------
+
+  A. No Standard Benchmark for Agentic RAG
+     Most benchmarks (Natural Questions, TriviaQA, HotPotQA, 2WikiMultiHopQA)
+     were designed for single-pass or simple multi-hop RAG. Agentic RAG systems
+     that iterate, use web search, or call tools are not well-evaluated by these
+     benchmarks. Reported gains may not generalize.
+
+  B. Latency & Cost Trade-Off
+     Agentic and multi-agent RAG systems require multiple LLM calls per query.
+     A single complex research question may cost 10-50x more than a naive RAG
+     equivalent. For production systems, caching and query routing (Adaptive RAG)
+     are critical to manage costs.
+
+  C. Chunking Remains an Art, Not a Science
+     There is no universally optimal chunk size or strategy. Semantic chunking
+     generally outperforms fixed-size chunking, but optimal chunk boundaries are
+     domain-dependent. Wrong chunking may split key reasoning chains.
+
+  D. Hallucination Persists Even with Retrieval
+     State-of-the-art RAG systems still answer only ~63% of factual questions
+     correctly. Even with perfect retrieval, the LLM may ignore or misinterpret
+     context. Self-RAG and faithfulness checks mitigate but do not eliminate this.
+
+  E. Knowledge Graph Construction (GraphRAG) Has High Upfront Cost
+     Microsoft's GraphRAG uses GPT-4 Turbo for graph extraction, community
+     detection, and summary generation. For large corpora, this can be
+     prohibitively expensive. The cost-benefit trade-off favors GraphRAG only
+     for corpora where cross-document relationships are critical.
+
+  F. Evaluation Reliability
+     LLM-as-judge evaluation (used by Ragas, TruLens) has its own biases and
+     error rates. Automated evaluation can miss subtle hallucinations or over-
+     penalize stylistic differences. Human evaluation remains the gold standard
+     but does not scale.
+
+  G. Source Provenance in Multi-Hop Retrieval
+     When a research agent synthesizes across multiple retrieved documents,
+     tracking which source supports which sub-claim becomes complex. Citation
+     chains can break. This is an active research area without a settled solution.
+
+  H. The "RAG is Dead" Narrative Is Overstated
+     Claims that RAG is being replaced by long-context models (Gemini 1M token,
+     GPT-4-128K) or by fully agentic systems are premature. Long-context models
+     still suffer from the "lost in the middle" problem and are more expensive.
+     RAG + agents is the consensus production pattern as of early 2026.
+
+--------------------------------------------------------------------------------
+8. BEST PRACTICES SUMMARY
+--------------------------------------------------------------------------------
+
+  For Production RAG Systems:
+    ✓ Always use hybrid search (dense + sparse) — it is the single highest-ROI
+      improvement over naive RAG.
+    ✓ Add a cross-encoder reranking stage — it substantially improves precision
+      before the LLM sees context.
+    ✓ Implement query rewriting/expansion for ambiguous or short queries.
+    ✓ Use sentence-window or parent-document chunking to retain surrounding
+      context.
+
+  For Research Agent Systems (beyond basic RAG):
+    ✓ Use agentic orchestration with query decomposition for complex questions.
+    ✓ Build in a self-evaluation / faithfulness check loop.
+    ✓ Log retrieval and generation metrics per query for ongoing quality
+      monitoring.
+    ✓ Use multi-source retrieval (local KB + web) with intelligent routing.
+    ✓ Report uncertainty and sources alongside answers.
+    ✓ Cache successful retrieval patterns to reduce cost on repeated queries.
+
+  For Evaluation:
+    ✓ Establish a gold-standard test set early (human-annotated Q&A pairs).
+    ✓ Use Ragas or a similar framework for automated evaluation during
+      development.
+    ✓ Monitor production with tracing (LangFuse, LangSmith) to catch regressions.
+    ✓ Track retrieval precision and hallucination rate as KPIs.
+    ✓ Do not rely solely on automated evaluation — sample human review is
+      essential.
+
+--------------------------------------------------------------------------------
+9. SOURCE NOTES & REFERENCES
+--------------------------------------------------------------------------------
+
+  [1] Lewis, P. et al. (2020). "Retrieval-Augmented Generation for Knowledge-
+      Intensive NLP Tasks." NeurIPS. — Foundational RAG paper.
+
+  [2] Asai, A. et al. (2023). "Self-RAG: Learning to Retrieve, Generate, and
+      Critique through Self-Reflection." — Introduced self-reflection tokens.
+
+  [3] Yan, S. et al. (2024). "Corrective Retrieval Augmented Generation."
+      — Introduced CRAG with relevance evaluation and web fallback.
+
+  [4] Jeong, S. et al. (2024). "Adaptive-RAG: Learning to Adapt Retrieval-
+      Augmented Large Language Models through Question Complexity."
+      — Query complexity-based routing.
+
+  [5] Microsoft Research (2024). "GraphRAG: Unlocking LLM Discovery on
+      Narrative Private Data." — Knowledge-graph-enhanced RAG.
+
+  [6] Singh, A. et al. (2025). "Agentic Retrieval-Augmented Generation: A
+      Survey on Agentic RAG." arXiv:2501.09136. — Comprehensive taxonomy of
+      agentic RAG architectures.
+
+  [7] Applied AI (2024). "Enterprise RAG Architecture: A Practitioner's
+      Guide." applied-ai.com. — Production RAG design patterns, hybrid search
+      40-70% recall improvement.
+
+  [8] Atlan (2024). "12 Advanced RAG Techniques: Beyond Naive Retrieval."
+      atlan.com. — Benchmarks: Naive RAG 44%, SOTA advanced RAG 63%.
+
+  [9] Patronus AI (2024). "RAG Evaluation Metrics: Best Practices for
+      Evaluating RAG Systems." patronus.ai. — Evaluation methodology.
+
+  [10] Qdrant (2024). "Best Practices in RAG Evaluation: A Comprehensive
+       Guide." qdrant.tech. — RAG error taxonomy and evaluation frameworks.
+
+  [11] Future AGI (2026). "Agentic RAG 2026: Patterns, Code, Observability."
+       futureagi.com. — Agentic RAG with trace + eval back-end.
+
+  [12] Tensoria (2025). "Agentic RAG: When Retrieval Meets AI Agents."
+       tensoria.fr. — Classic RAG vs. Agentic RAG comparison.
+
+  [13] Google Research (2025). "Unlocking Dependable Responses with Gemini
+       Enterprise Agent Platform's Agentic RAG." — Multi-agent RAG with
+       Sufficient Context Agent.
+
+  [14] Microsoft Learn (2025). "RAG and Generative AI - Azure AI Search."
+       — Agentic retrieval (preview) vs. classic RAG on Azure.
+
+  [15] AWS re:Invent 2025 (Pinecone). "RAG is Dead: Long Live Intelligent
+       RAG." — Agentic RAG pipelines with multi-step reasoning.
+
+  [16] IBM (2025). "Result Evaluation for RAG: Metrics & Best Practices."
+       ibm.com/think. — Evaluation strategy for production RAG.
+
+  [17] Evidently AI (2024). "A Complete Guide to RAG Evaluation: Metrics,
+       Testing and Best Practices." evidentlyai.com. — Production RAG testing.
+
+  [18] Neo4j (2025). "Integrating Microsoft GraphRAG into Neo4j."
+       neo4j.com. — GraphRAG implementation with LangChain/LlamaIndex.
+
+  [19] PuppyGraph (2025). "GraphRAG Architecture: Components, Workflow &
+       Implementation Guide." puppygraph.com. — GraphRAG technical deep-dive.
+
+  [20] Humanloop (2025). "8 Retrieval Augmented Generation Architectures You
+       Should Know." humanloop.com. — RAG architecture survey.
+
+  [21] Kore.ai (2025). "MultiHop-RAG." kore.ai. — Multi-hop RAG patterns.
+
+--------------------------------------------------------------------------------
+10. CONFIDENCE ASSESSMENT
+-------------------------------------------------------------------------------
+
+  The factual claims in this report are drawn from multiple authoritative
+  sources (published papers, practitioner guides from major AI companies,
+  established evaluation frameworks). Cross-referencing shows general
+  convergence on the architectural patterns described.
+
+  Areas of HIGH Confidence:
+    - Naive RAG limitations and the benefits of hybrid search + reranking
+    - The existence and basic taxonomy of Self-RAG, CRAG, GraphRAG, Agentic RAG
+    - Evaluation metrics (retrieval precision/recall, faithfulness/hallucination)
+
+  Areas of MEDIUM Confidence:
+    - Specific accuracy numbers (44% naive, 63% advanced) — these come from one
+      benchmark (Atlan 2024), which may not generalize to all datasets
+    - Relative cost ratios between architecture types — these vary by
+      implementation, model choice, and caching strategy
+
+  Areas of LOW Confidence:
+    - "Best" architecture for research agents — highly domain-dependent; no
+      universal winner has been established
+    - Future trajectory — the field is evolving rapidly; 6-month-old claims may
+      be outdated
+    - Optimal chunking strategies — optimal strategy depends on document type,
+      language, and query patterns
+
+  Known Gaps:
+    - No comprehensive head-to-head benchmark comparing all 8 architectures
+      on the same dataset with controlled conditions
+    - Agentic RAG benchmarks are nascent and not yet standardized
+    - Long-context model impact on RAG architecture (Gemini 2.0 Pro, Claude 3.5
+      Opus, GPT-5) is an emerging topic not fully covered here
+
+================================================================================
+END OF REPORT
+================================================================================
