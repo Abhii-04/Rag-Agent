@@ -1,3 +1,5 @@
+import hashlib
+import json
 import math
 import re
 from collections import Counter
@@ -7,10 +9,13 @@ from typing import Iterable
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CORPUS_PATH = PROJECT_ROOT / "knowledge"
+DEFAULT_CORPUS_PATH = PROJECT_ROOT / "sandbox"
+DEFAULT_VECTOR_STORE_PATH = DEFAULT_CORPUS_PATH / "vector_store"
 SUPPORTED_EXTENSIONS = {".md", ".markdown", ".txt", ".rst"}
 TOKEN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*")
 SAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9_.-]+")
+VECTOR_DIMENSIONS = 512
+VECTOR_STORE_FILENAME = "index.json"
 
 
 @dataclass(frozen=True)
@@ -25,6 +30,7 @@ class DocumentChunk:
     source: str
     text: str
     tokens: Counter[str]
+    vector: dict[str, float]
 
 
 def tokenize(text: str) -> list[str]:
@@ -39,6 +45,7 @@ def iter_text_files(root: Path) -> Iterable[Path]:
         path
         for path in sorted(root.rglob("*"))
         if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS
+        and DEFAULT_VECTOR_STORE_PATH.name not in path.relative_to(root).parts
     )
 
 
@@ -60,11 +67,34 @@ def chunk_text(text: str, *, max_words: int = 180, overlap: int = 30) -> list[st
     return chunks
 
 
+def hashed_vector(tokens: Counter[str], dimensions: int = VECTOR_DIMENSIONS) -> dict[str, float]:
+    if not tokens:
+        return {}
+
+    vector: Counter[int] = Counter()
+    for token, count in tokens.items():
+        digest = hashlib.blake2b(token.encode("utf-8"), digest_size=8).digest()
+        index = int.from_bytes(digest, "big") % dimensions
+        vector[index] += count
+
+    norm = math.sqrt(sum(value * value for value in vector.values()))
+    if not norm:
+        return {}
+    return {str(index): value / norm for index, value in sorted(vector.items())}
+
+
+def dot_product(left: dict[str, float], right: dict[str, float]) -> float:
+    if len(left) > len(right):
+        left, right = right, left
+    return sum(value * right.get(index, 0.0) for index, value in left.items())
+
+
 class LocalRAGIndex:
-    def __init__(self, corpus_path: str | Path = DEFAULT_CORPUS_PATH) -> None:
-        self.corpus_path = Path(corpus_path).expanduser().resolve()
+    def __init__(self) -> None:
+        self.corpus_path = DEFAULT_CORPUS_PATH
+        self.vector_store_path = DEFAULT_VECTOR_STORE_PATH
         self.chunks = self._load_chunks()
-        self.document_frequency = self._build_document_frequency()
+        self._persist_vector_store()
 
     def _load_chunks(self) -> list[DocumentChunk]:
         loaded: list[DocumentChunk] = []
@@ -82,51 +112,57 @@ class LocalRAGIndex:
                             source=str(path.relative_to(self.corpus_path)),
                             text=chunk,
                             tokens=tokens,
+                            vector=hashed_vector(tokens),
                         )
                     )
         return loaded
-
-    def _build_document_frequency(self) -> Counter[str]:
-        frequency: Counter[str] = Counter()
-        for chunk in self.chunks:
-            frequency.update(chunk.tokens.keys())
-        return frequency
 
     def search(self, query: str, max_results: int = 5) -> list[RAGResult]:
         query_terms = Counter(tokenize(query))
         if not query_terms or not self.chunks:
             return []
 
-        total_chunks = len(self.chunks)
+        query_vector = hashed_vector(query_terms)
         scored: list[RAGResult] = []
         for chunk in self.chunks:
-            score = 0.0
-            for term, query_count in query_terms.items():
-                term_frequency = chunk.tokens.get(term, 0)
-                if not term_frequency:
-                    continue
-                idf = math.log((1 + total_chunks) / (1 + self.document_frequency[term])) + 1
-                score += query_count * term_frequency * idf
+            score = dot_product(query_vector, chunk.vector)
 
             if score > 0:
-                length_penalty = math.sqrt(sum(chunk.tokens.values()))
                 scored.append(
                     RAGResult(
                         source=chunk.source,
                         text=chunk.text,
-                        score=score / max(length_penalty, 1.0),
+                        score=score,
                     )
                 )
 
         scored.sort(key=lambda result: result.score, reverse=True)
         return scored[:max_results]
 
+    def _persist_vector_store(self) -> None:
+        self.vector_store_path.mkdir(parents=True, exist_ok=True)
+        index_path = self.vector_store_path / VECTOR_STORE_FILENAME
+        payload = {
+            "corpus_path": str(self.corpus_path),
+            "dimensions": VECTOR_DIMENSIONS,
+            "chunks": [
+                {
+                    "source": chunk.source,
+                    "text": chunk.text,
+                    "tokens": dict(chunk.tokens),
+                    "vector": chunk.vector,
+                }
+                for chunk in self.chunks
+            ],
+        }
+        index_path.write_text(json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8")
+
 
 def format_rag_results(results: list[RAGResult]) -> str:
     if not results:
-        return "No relevant passages found in the local knowledge base."
+        return "No relevant passages found in the sandbox vector index."
 
-    lines = ["Local knowledge base results:"]
+    lines = ["Sandbox vector index results:"]
     for index, result in enumerate(results, start=1):
         lines.append(f"\n[{index}] Source: {result.source}")
         lines.append(f"Score: {result.score:.3f}")
@@ -136,15 +172,14 @@ def format_rag_results(results: list[RAGResult]) -> str:
 
 def rag_search(
     query: str,
-    corpus_path: str = str(DEFAULT_CORPUS_PATH),
     max_results: int = 5,
 ) -> str:
-    """Search local knowledge-base documents and return cited relevant passages."""
-    index = LocalRAGIndex(corpus_path)
+    """Vectorize sandbox documents, persist the index, and return cited passages."""
+    index = LocalRAGIndex()
     if not index.chunks:
         return (
             f"No documents found in {index.corpus_path}. "
-            "Add .md, .txt, .markdown, or .rst files to use local RAG."
+            "Add .md, .txt, .markdown, or .rst files to /sandbox to use local RAG."
         )
 
     return format_rag_results(index.search(query, max_results=max_results))
@@ -155,7 +190,7 @@ def safe_markdown_filename(filename: str | None, title: str) -> str:
     name = Path(source).name.strip().lower()
     name = SAFE_FILENAME_RE.sub("-", name).strip(".-")
     if not name:
-        name = "knowledge-note"
+        name = "sandbox-note"
     if not name.endswith(".md"):
         name = f"{name}.md"
     return name
@@ -165,18 +200,17 @@ def save_to_knowledge(
     title: str,
     content: str,
     filename: str | None = None,
-    corpus_path: str = str(DEFAULT_CORPUS_PATH),
 ) -> str:
-    """Save reusable research notes into the local RAG knowledge base."""
+    """Save reusable research notes into the sandbox RAG corpus."""
     if not title.strip():
-        return "Could not save knowledge: title is required."
+        return "Could not save sandbox document: title is required."
     if not content.strip():
-        return "Could not save knowledge: content is required."
+        return "Could not save sandbox document: content is required."
 
-    root = Path(corpus_path).expanduser().resolve()
+    root = DEFAULT_CORPUS_PATH
     root.mkdir(parents=True, exist_ok=True)
     safe_name = safe_markdown_filename(filename, title)
     path = root / safe_name
     body = f"# {title.strip()}\n\n{content.strip()}\n"
     path.write_text(body, encoding="utf-8")
-    return f"Saved knowledge document to {path}."
+    return f"Saved sandbox document to {path}."

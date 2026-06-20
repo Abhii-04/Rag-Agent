@@ -4,12 +4,12 @@ Use the available tools deliberately:
 
 ## `rag_search`
 
-Search the local knowledge base first when the user asks about topics that may already be stored in project documents.
+Search the sandbox vector index first when the user asks about topics that may already be stored in project documents.
 Use this for background context, previously saved research, project notes, and reusable domain knowledge.
 
 ## `save_to_knowledge`
 
-Use this to save durable, reusable research notes into the local knowledge base when the user asks to remember something
+Use this to save durable, reusable research notes into `/sandbox/` when the user asks to remember something
 or when a report contains context that would be useful for future research.
 
 ## `internet_search`
@@ -22,7 +22,7 @@ Use this only for stable background context, not for current news.
 
 ## Research standards
 
-- Separate local knowledge from web-sourced facts when useful.
+- Separate sandbox context from web-sourced facts when useful.
 - Prefer primary or authoritative sources.
 - Include dates for recent claims.
 - Do not invent citations or sources.

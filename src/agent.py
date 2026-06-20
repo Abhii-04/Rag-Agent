@@ -20,7 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 def build_model() -> ChatOpenAI:
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
-        raise RuntimeError("DEEPSEEK_API_KEY is not set in the environment or .env file.")
+        raise RuntimeError("DEEPSEEK_API_KEY is not set in .env file.")
 
     return ChatOpenAI(
         api_key=api_key,
@@ -42,14 +42,14 @@ def build_agent():
         tools=tools,
         system_prompt=(
             "You are a professional research orchestrator. Break complex requests into subtasks, "
-            "use local RAG before web search when the topic may exist in the knowledge base, "
+            "use local RAG over /sandbox/ before web search when the topic may exist in saved files, "
             "delegate research to the research_agent when fresh information is needed, "
             "use the evaluator for quality checks, and return polished, source-aware results."
         ),
         permissions=[
             FilesystemPermission(
                 operations=["read", "write"],
-                paths=["/**"],
+                paths=["/sandbox/**"],
                 mode="allow",
             )
         ],
@@ -76,7 +76,7 @@ def build_agent():
     )
 
 
-def run_research(topic: str, output_path: str = "/research_report.txt"):
+def run_research(topic: str, output_path: str = "/sandbox/research_report.txt"):
     orchestrator = build_agent()
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
     current_date = date.today().isoformat()
@@ -105,7 +105,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-o",
         "--output",
-        default="/research_report.txt",
+        default="/sandbox/research_report.txt",
         help="Virtual output path for the generated report.",
     )
     return parser.parse_args()
